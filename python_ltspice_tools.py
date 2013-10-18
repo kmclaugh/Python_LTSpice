@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Python Code used for testing a photoresistor_array circuit in LTSpice by rewriting the netlist file with new
+# Python Code used for testing spice circuits in LTSpice by rewriting the netlist file with new
 # parameters, running the netlist in LTSpice, and interpreting the output
 import re
 import os
