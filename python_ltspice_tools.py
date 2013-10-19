@@ -11,9 +11,7 @@ def find_param_equals(parameter,line):
     param_regex = re.compile(regex_string,re.IGNORECASE)
     param_find = param_regex.findall(line)
     if param_find != []:
-        param_find = param_find[0].split("=")
-        param_equals = param_find[1].replace(" ","")
-        return(param_equals)
+        return(param_find[0])
     else:
         return(False)
 #----------------------------------------END Find Param Equals----------------------------------------#}}}
@@ -24,14 +22,18 @@ class original_line_class:
     def __init__(self,line,line_number):
         self.line = line
         self.number = line_number
+    def __repr__(self):
+        return(self.line)
+    def __str__(self):
+        return(self.line)
+
 #----------------------------------------End Original Line Class----------------------------------------#}}}
 
 #----------------------------------------Process File----------------------------------------#{{{1
-def process_file(filename,parameter_header_name):
+def process_file(filename):
     """Reads the .net file and picks out the parameters one is interested in"""
     file = open(filename,"r")
     original_file = []
-    parameter_lines = []
     lines = file.readlines()
     line_count = 0
     param_line = False
@@ -39,19 +41,27 @@ def process_file(filename,parameter_header_name):
         line=line[:-2]
         original_line = original_line_class(line,line_count)
         original_file.append(original_line)
-        if parameter_header_name in line:
-            if "End" in line:
-                end_param_statement = line
+        line_count += 1
+    return(original_file)
+#----------------------------------------END Process File----------------------------------------#}}}
+
+#----------------------------------------Read Parameter Lines----------------------------------------#{{{1
+def read_parameter_lines(original_lines_list,parameter_header_name):
+    """Picks out the lines with the given parameters """
+    parameter_lines = []
+    param_line = False
+    for original_line in original_lines_list:
+        if parameter_header_name in original_line.line:
+            if "End" in original_line.line:
+                end_param_statement = original_line
                 param_line = False
                 parameter_lines.append(original_line)
             else:
-                start_param_statement = line
+                start_param_statement = original_line
                 param_line = True
         if param_line == True:
             parameter_lines.append(original_line)
-        line_count += 1 
-    file.close()
-    return(original_file,parameter_lines)
+    return(parameter_lines)
 #----------------------------------------END Process File----------------------------------------#}}}
 
 #----------------------------------------Param Statement Class----------------------------------------#{{{1
@@ -59,13 +69,18 @@ class param_statement_class:
     """A class that defines a parameter in a netlist file. For instance:
             R0=1k"""
 
-    def __init__(self,original_line,original_param_equals):
+    def __init__(self,parameter,original_line):
+        self.param_statement = parameter
         self.original_line = original_line
-        self.param_equals = original_param_equals
-    
-    def replace_param_equals(self,new_param_equals,current_file_list):
+        self.find_param_equals()
+         
+    def find_param_equals(self):
+        param_find = self.param_statement.split("=")
+        self.param_equals = param_find[1].replace(" ","")
+
+    def replace_param_equals(self,new_param_statement,current_file_list):
         current_line = current_file_list[self.original_line.number]
-        new_line = current_line.line.replace(self.param_equals,new_param_equals)
+        new_line = current_line.line.replace(self.param_statement,new_param_statement)
         new_line = original_line_class(new_line,self.original_line.number)
         current_file_list[self.original_line.number] = new_line
         return(current_file_list)
@@ -77,12 +92,16 @@ def switch_param_equals(change_params,original_file_list,parameter_lines):
         change parameters are given as list in the format (parameter,new_equals)"""
     current_file_list = original_file_list
     for line in parameter_lines:
+        updated_line = line
         for change_param in change_params:
-            if change_param[0] in line.line: 
-                orig_param_equals = find_param_equals(change_param[0],line.line)
+            if change_param[0] in line.line:
+                orig_param_equals = find_param_equals(change_param[0],updated_line.line)
+
                 if orig_param_equals != False:
-                    param_statement = param_statement_class(line,orig_param_equals)
-                    param_statement.replace_param_equals(change_param[1],current_file_list)
+                    param_statement = param_statement_class(orig_param_equals,updated_line)
+                    new_param_statement = change_param[0]+"="+str(change_param[1])
+                    current_file_list = param_statement.replace_param_equals(new_param_statement,current_file_list)
+                    updated_line = current_file_list[param_statement.original_line.number]
     return(current_file_list)
 #----------------------------------------END Switch Param Equals----------------------------------------#}}}
 
