@@ -4,6 +4,7 @@
 import re
 import os
 import sys
+import copy
 
 #----------------------------------------Remove Path from Name----------------------------------------#{{{1
 def remove_path_from_name(full_filename):
@@ -17,7 +18,7 @@ class parameter_statement_class:
     """A container class for carrying around parameter statement info"""
     def __init__(self,variable,value,line_number=None):
         self.variable = variable
-        self.value = value
+        self.value = str(value)
         self.line_number = line_number
     def __repr__(self):
         return("{}={}".format(self.variable,self.value))
@@ -64,7 +65,7 @@ def change_parameter_value(a_param,new_value,current_lines):
         Returns the new_lines list with the parameter changed"""
     current_line = current_lines[a_param.line_number]
     current_param_statment = find_given_param_statement(a_param.variable,current_line)
-    new_param_statement = a_param.variable + "=" + new_value
+    new_param_statement = a_param.variable + "=" + str(new_value)
     new_line = current_line.replace(current_param_statment,new_param_statement)
     new_lines = current_lines
     new_lines[a_param.line_number] = new_line
@@ -138,7 +139,7 @@ class netlist_class:
             Returns the new lines of a new netlist with the value changed.
             Really only for internal use"""
         parameter_statment = self.parameters[a_variable]
-        new_lines = change_parameter_value(a_param=parameter_statment,new_value=a_value,current_lines=self.lines)
+        new_lines = change_parameter_value(a_param=parameter_statment,new_value=str(a_value),current_lines=self.lines)
         return(new_lines)
 
     def change_parameters(self,variable_value_dictionary,new_filename=None):
@@ -146,7 +147,7 @@ class netlist_class:
             Returns a new netlist object. Give the full path to the new linux filename if you don't want to use
             the default new filename."""
         ##Create the new_netlist from the old and rename it's by appending "new" or the given filename
-        new_netlist = self
+        new_netlist = copy.deepcopy(self)
         if new_filename == None:
             new_netlist.name = "{}_new".format(self.name.split(".net")[0])+".net"
             new_netlist.linux_filename = self.linux_directory + new_netlist.name
@@ -189,7 +190,6 @@ class netlist_class:
         os.system(command)
         
         #Read in log file and check for errors
-        print("reading in .log file")
         log_filename = self.linux_filename.replace(".net",".log")
         file = open(log_filename,"r")
         log_lines = file.readlines()
@@ -206,12 +206,13 @@ class netlist_class:
             command = "gedit {}&".format(local_log_filename)
             os.system(command)
             sys.exit(0)
+        
         else: #if no errors make raw_values object
             raw_values = raw_values_class(self.linux_filename,log_filename=local_log_filename,log_lines=log_lines)        
             return(raw_values)
 #----------------------------------------END Netlist Class----------------------------------------#}}}
 
-#----------------------------------------Variable Value Class----------------------------------------#{{{1
+#----------------------------------------Node Value Class----------------------------------------#{{{1
 class node_value_class:
     """Container class for node-value pairs"""
     def __init__(self,node,node_number,node_type,value=None):
@@ -269,6 +270,7 @@ class raw_values_class:
         self.log_filename = log_filename
         self.log_lines = log_lines
         self.name = remove_path_from_name(self.raw_filename)
+        self.node_values = "undefined"
         self.read_in_file()
 
     def __repr__(self):
