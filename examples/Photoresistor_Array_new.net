@@ -1,31 +1,31 @@
 * C:\Program Files\LTC\LTspiceIV\Photoresistor_Array\Photoresistor_Array.asc
-R1 N004 N003 {R00}
-D1 N003 Read0 D
-R2 N006 N005 {R10}
-D2 N005 Read0 D
-R3 N004 N007 {R01}
-D3 N007 Read1 D
-R4 N006 N008 {R11}
-D4 N008 Read1 D
+R1 A_Out0 N001 {R00}
+D1 N001 Read0 D
+R2 A_Out1 N002 {R10}
+D2 N002 Read0 D
+R3 A_Out0 N003 {R01}
+D3 N003 Read1 D
+R4 A_Out1 N004 {R11}
+D4 N004 Read1 D
 Rload1 Read1 0 10k
 Rload0 Read0 0 10k
-XU1 N002 N006 arduino_output
-XU2 N001 N004 arduino_output
-V1 N002 0 {V1}
-V0 N001 0 {V0}
+XU1 Vcon1 A_Out1 arduino_output
+XU2 Vcon0 A_Out0 arduino_output
+Vcon1 Vcon1 0 {Vcon1}
+Vcon0 Vcon0 0 {Vcon0}
 .model D D
 .lib C:\Program Files\LTC\LTspiceIV\lib\cmp\standard.dio
 .include C:\Program Files\LTC\LTspiceIV\lib\sub\Arduino_Output.sub
 .op
 *************************** Resistance Parameters*******************
 .param
-+R00={Rlight} R10={Rdark}
-+R01=5k R11=10k
++R00=1k R10={Rdark}
++R01=5k R11={Rlight}
 *************************** End Resistance Parameters*************
 .param Rdark=1MEG Rlight=1
 *************************** Voltage Parameters*******************
 .param
-+V0={Rlight} V1={Rdark}
++vcon0=0 vcon1=0
 *************************** End Voltage Parameters*************
 .backanno
 .end
