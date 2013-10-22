@@ -1,0 +1,8 @@
+* C:\Program Files\LTC\LTspiceIV\Python_LTSpice_Examples\simple_resistance_circuit.asc
+vsource Vsource 0 {Vsource}
+Rload0 Vsource Test {Rload0}
+Rload1 Test 0 {Rload1}
+.param Vsource=5v Rload0=1k Rload1=5k
+.op
+.backanno
+.end

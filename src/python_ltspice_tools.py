@@ -3,6 +3,7 @@
 # parameters, running the netlist in LTSpice, and interpreting the output
 import re
 import os
+import sys
 
 #----------------------------------------Remove Path from Name----------------------------------------#{{{1
 def remove_path_from_name(full_filename):
@@ -79,7 +80,20 @@ def create_local_log_file(log_filename,log_lines):
         file.write(line+"\n")
     return(new_log_filename)
 #----------------------------------------END Create Local Lof File----------------------------------------#}}}
-       
+
+#----------------------------------------Parameter Exception Class----------------------------------------#{{{1
+class ParameterException(Exception):
+    """An exception class for when the given parameter is not found in the file"""
+    def __init__(self,given_parameter):
+        self.given_parameter = given_parameter
+    def __repr__(self):
+        error_string = "ParameterError: No such parameter in netlist: {}".format(self.given_parameter)
+        return(error_string)
+    def __str__(self):
+        error_string = "ParameterError: No such parameter in netlist: {}".format(self.given_parameter)
+        return(error_string)            
+#----------------------------------------END Parameter Exception Class----------------------------------------#}}}
+
 #----------------------------------------Netlist Class----------------------------------------#{{{1
 class netlist_class:
     """A container class for carrying around info about a netlist file"""
@@ -148,7 +162,11 @@ class netlist_class:
         ##Change the parameters and update the new parameter dictionary
         new_parameters = self.parameters
         for variable, value in variable_value_dictionary.iteritems():
-            new_netlist.lines = new_netlist.change_single_param(variable,value)
+            try:
+                new_netlist.lines = new_netlist.change_single_param(variable,value)
+            except KeyError as keyerror:
+                print(ParameterException(keyerror.args[0]))
+                sys.exit(0)
             new_parameter_statement = parameter_statement_class(variable,value)
             new_parameter_statement = new_parameters[variable]
             new_parameter_statement.value = value
@@ -185,13 +203,10 @@ class netlist_class:
         log_lines = edited_lines
         local_log_filename = create_local_log_file(log_filename,log_lines)
         if error == True:
-            print("there was an error. See .log file")
             command = "gedit {}&".format(local_log_filename)
             os.system(command)
-            return(False)
-
+            sys.exit(0)
         else: #if no errors make raw_values object
-            print("reading in raw file")
             raw_values = raw_values_class(self.linux_filename,log_filename=local_log_filename,log_lines=log_lines)        
             return(raw_values)
 #----------------------------------------END Netlist Class----------------------------------------#}}}
@@ -293,12 +308,20 @@ class raw_values_class:
         node_dictionary = {}
         for node_value in node_values:
             node_dictionary[node_value.node] = node_value
-        self.nodes_values = node_dictionary
+        self.node_values = node_dictionary
+
+    def return_node_value(self,name,name_type="node"):
+        """Returns the node_value object correspoding to the name given. If name_type option is set to 
+            "device" it will return the device current otherwise it defaults to "node" and returns a node voltage"""
+        if name_type == "node":
+            name = name.lower()
+        elif name_type == "device":
+            name = name.capitalize()
+        else:
+            print("Invalid name_type for return_node_value")
+            sys.exit(0)
+        node_value = self.node_values[name]
+        return(node_value)
 #----------------------------------------END Raw Values Class----------------------------------------#}}}
         
-original_filename = "/home/kevin/.wine/drive_c/Program Files/LTC/LTspiceIV/Photoresistor_Array/Photoresistor_Array.net"
-original_netlist = netlist_class(original_filename)
-change_params = {"R00":"1k","R01":"5k"}
-new_netlist = original_netlist.change_parameters(change_params)
-new_raw_values = new_netlist.run_netlist()
-print(new_raw_values.nodes_values)
+
