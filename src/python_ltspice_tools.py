@@ -157,7 +157,7 @@ class simulation_commands_class(dict):
         found_command = None
         for command_type, simulation_command in self.iteritems():
             
-            if line[0] != ";":
+            if len(line) >= 1 and line[0] != ";":
                 if simulation_command.base_command_name in line:
                     found_command = self.make_command(simulation_command.command_type)
                     break
@@ -431,7 +431,7 @@ class raw_values_class:
             elif start_nodes == True:
                 node_value_pair = pull_node(line)
                 node_values.append(copy.deepcopy(node_value_pair))
-
+           
             elif start_values == True:
                 if pull_step_number(line) != False:
                     step_number = pull_step_number
@@ -441,8 +441,9 @@ class raw_values_class:
                 value_count += 1
         
         node_dictionary = {}
-        self.independet_node = node_values[0]
-        for node_value in node_values[1:]:
+        if self.simulation_command.command_type != "operating point":
+            self.independent_node = node_values[0]
+        for node_value in node_values:
             node_dictionary[node_value.node] = node_value
         self.node_values = node_dictionary
 
@@ -462,8 +463,8 @@ class raw_values_class:
         
 
 #Read netlist file into the netlist object
-original_filename = "/home/kevin/.wine/drive_c/Program Files/LTC/LTspiceIV/Python_LTSpice_Examples/simple_resistance_circuit.net"
-original_netlist = netlist_class(original_filename)
-raw_values = original_netlist.run_netlist()
-for node, node_value in raw_values.node_values.iteritems():
-    print(node_value.node, node_value.values)
+#original_filename = "/home/kevin/.wine/drive_c/Program Files/LTC/LTspiceIV/Python_LTSpice_Examples/simple_resistance_circuit.net"
+#original_netlist = netlist_class(original_filename)
+#raw_values = original_netlist.run_netlist()
+#for node, node_value in raw_values.node_values.iteritems():
+#    print(node_value.node, node_value.values)
