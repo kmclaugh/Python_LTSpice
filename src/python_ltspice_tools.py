@@ -323,13 +323,20 @@ class node_value_class:
     
     def __repr__(self):
         if self.values != []:
-            return_string = "{} = {} {}".format(self.node,self.values[0],self.unit)
+            if len(self.values) == 1:
+                return_string = "{} = {} {}".format(self.node,self.values[0],self.unit)
+            else:
+                return_string = "{} = [{},...] {}".format(self.node,self.values[0],self.unit)
         else:
             return_string = "{} = None {}".format(self.node,self.unit)
         return(return_string)
+
     def __str__(self):
         if self.values != []:
-            return_string = "{} = {} {}".format(self.node,self.values[0],self.unit)
+            if len(self.values) == 1:
+                return_string = "{} = {} {}".format(self.node,self.values[0],self.unit)
+            else:
+                return_string = "{} = [{},...] {}".format(self.node,self.values[0],self.unit)
         else:
             return_string = "{} = None {}".format(self.node,self.unit)
         return(return_string)
@@ -387,6 +394,44 @@ def pull_step_number(line):
     return(step_value)
 #----------------------------------------END Pull Step Number----------------------------------------#}}}
 
+#----------------------------------------Find Value in List----------------------------------------#{{{1
+def find_value_in_list(the_value,the_list):
+    """Finds the closest value in the given ordered (from smallest to largest) list to the given value 
+        without going over that value. Returns the list value and list index of the found value"""
+    min_value = the_list[0]
+    max_value = the_list[-1]
+    if the_value > max_value:
+        return("value not in list")
+    elif the_value == max_value:
+        return(max_value)
+    elif the_value < min_value:
+        return("value not in list")
+    elif the_value == min_value:
+        return(min_value)
+    else:
+        max_index = len(the_list) - 1
+        min_index = 0
+        found_value = False
+        counter = 0
+        while found_value == False:
+            current_index = min_index + int((max_index - min_index)/2)
+            current_value = the_list[current_index]
+            if current_value == the_value:
+                return(current_value,current_index)
+            if current_value > the_value and the_list[current_index-1] <= the_value:
+                return(the_list[current_index-1],current_index-1)
+            if current_value < the_value and the_list[current_index+1] >= the_value:
+                return(current_value,current_index)
+            elif current_value > the_value:
+                max_index = current_index
+            elif current_value < the_value:
+                min_index = current_index
+            if counter == 10:
+                break
+            else:
+                counter += 1
+#----------------------------------------END Find Value in List----------------------------------------#}}}
+
 #----------------------------------------Raw Values Class----------------------------------------#{{{1
 class raw_values_class:
     """Class for a raw file output. Contains a dictionary with all the node names and their values.
@@ -410,10 +455,12 @@ class raw_values_class:
         """Reads in the raw collect and collects the node and value info storing them indiciviually in a 
             node value class. Returns a dictionary of node names and corresponding node value classes"""
    
+        #Open file for reading
         file = open(self.raw_filename,"r")
         self.raw_file_lines = file.readlines()
         file.close()
         
+        #Read and interpret the raw file
         start_nodes = False
         start_values = False
         value_count = 0
@@ -439,10 +486,15 @@ class raw_values_class:
                 value = pull_value(line)
                 node_values[value_count].values.append(value)
                 value_count += 1
-        
-        node_dictionary = {}
+       
+        #Pull the independent node
         if self.simulation_command.command_type != "operating point":
             self.independent_node = node_values[0]
+        else:
+            self.independent_node = "operating point"
+
+        #Make the node dictionary
+        node_dictionary = {}
         for node_value in node_values:
             node_dictionary[node_value.node] = node_value
         self.node_values = node_dictionary
@@ -459,12 +511,22 @@ class raw_values_class:
             sys.exit(0)
         node_value = self.node_values[name]
         return(node_value)
+
+    def find_node_value_at_independet_value(self,given_independent_value,given_node):
+        """Finds the value of the given node at the given corresponding independent node value.
+            Returns the (actual_independent_value,given_node_value)."""
+        return_values = find_value_in_list(given_independent_value,self.independent_node.values)
+        actual_independent_value = return_values[0]
+        given_node_value = given_node.values[return_values[1]]
+        return((actual_independent_value,given_node_value))
 #----------------------------------------END Raw Values Class----------------------------------------#}}}
         
 
-#Read netlist file into the netlist object
-#original_filename = "/home/kevin/.wine/drive_c/Program Files/LTC/LTspiceIV/Python_LTSpice_Examples/simple_resistance_circuit.net"
-#original_netlist = netlist_class(original_filename)
-#raw_values = original_netlist.run_netlist()
-#for node, node_value in raw_values.node_values.iteritems():
-#    print(node_value.node, node_value.values)
+##Read netlist file into the netlist object
+original_filename = "/home/kevin/.wine/drive_c/Program Files/LTC/LTspiceIV/Python_LTSpice_Examples/simple_resistance_circuit.net"
+original_netlist = netlist_class(original_filename)
+raw_values = original_netlist.run_netlist()
+for node, node_value in raw_values.node_values.iteritems():
+    test = .5 #s
+    result = raw_values.find_node_value_at_independet_value(given_independent_value=test,given_node=node_value)
+    print(node,result)

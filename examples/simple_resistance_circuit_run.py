@@ -17,3 +17,5 @@ new_raw_values = new_netlist.run_netlist()
 #Look up the test node a print its value
 test_node = new_raw_values.return_node_value("test")
 print(test_node)
+
+
